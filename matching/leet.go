@@ -2,10 +2,10 @@ package matching
 
 import (
 	"bytes"
-	// "github.com/trustelem/zxcvbn/entropy"
-	"github.com/trustelem/zxcvbn/match"
 	"sort"
 	"strings"
+
+	"github.com/eljamo/zxcvbn/match"
 )
 
 type l33tMatch struct {
@@ -52,15 +52,15 @@ func (lm l33tMatch) Matches(password string) []*match.Match {
 }
 
 func translate(password string, sub map[string]string) string {
-	var res string
+	var res strings.Builder
 	for _, s := range password {
 		if v, ok := sub[string(s)]; ok {
-			res = res + v
+			res.WriteString(v)
 		} else {
-			res = res + string(s)
+			res.WriteString(string(s))
 		}
 	}
-	return res
+	return res.String()
 }
 
 type kv struct {
@@ -98,7 +98,7 @@ func enumerateLeetSubs(table map[string][]string) []map[string]string {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	var subs = [][]kv{[]kv{}}
+	subs := [][]kv{{}}
 
 	var helper func(keys []string)
 	helper = func(keys []string) {
@@ -111,14 +111,16 @@ func enumerateLeetSubs(table map[string][]string) []map[string]string {
 		for _, l33tChr := range table[firstKey] {
 			for _, sub := range subs {
 				dupL33tIndex := -1
-				for i := 0; i < len(sub); i++ {
+				for i := range sub {
 					if sub[i].k == l33tChr {
 						dupL33tIndex = i
 						break
 					}
 				}
 				if dupL33tIndex == -1 {
-					subExtension := append(sub, kv{k: l33tChr, v: firstKey})
+					subExtension := make([]kv, len(sub)+1)
+					copy(subExtension, sub)
+					subExtension[len(sub)] = kv{k: l33tChr, v: firstKey}
 					nextSubs = append(nextSubs, subExtension)
 				} else {
 					subAlternative := make([]kv, 0, len(sub))

@@ -1,25 +1,63 @@
 package matching
 
 import (
-	"github.com/trustelem/zxcvbn/adjacency"
-	"github.com/trustelem/zxcvbn/frequency"
-	"github.com/trustelem/zxcvbn/match"
 	"regexp"
+
+	"github.com/eljamo/zxcvbn/adjacency"
+	"github.com/eljamo/zxcvbn/frequency"
+	"github.com/eljamo/zxcvbn/match"
 )
 
+type Omnimatcher struct {
+	dictMatcher     dictionaryMatch
+	l33tTrieMatcher l33tTrieMatch
+}
+
+func NewOmnimatcher(customDictionaries map[string][]string) Omnimatcher {
+	dictMatcher := defaultRankedDictionaries
+	for name, words := range customDictionaries {
+		dictMatcher = dictMatcher.withDict(name, buildRankedDict(words))
+	}
+
+	return Omnimatcher{
+		dictMatcher:     dictMatcher,
+		l33tTrieMatcher: newl33tTrieMatch(dictMatcher, l33tTable),
+	}
+}
+
 func Omnimatch(password string, userInputs []string) (matches []*match.Match) {
-	dictMatcher := defaultRankedDictionnaries.withDict("user_inputs", buildRankedDict(userInputs))
+	return defaultOmnimatcher.Omnimatch(password, userInputs)
+}
+
+func (om Omnimatcher) Omnimatch(password string, userInputs []string) (matches []*match.Match) {
+	dictMatcher := om.dictMatcher
+	l33tTrieMatchers := []match.Matcher{om.l33tTrieMatcher}
+
+	if len(userInputs) > 0 {
+		userInputDict := buildRankedDict(userInputs)
+		dictMatcher = om.dictMatcher.withDict("user_inputs", userInputDict)
+		userInputMatcher := dictionaryMatch{
+			rankedDictionaries: map[string]rankedDictionnary{
+				"user_inputs": userInputDict,
+			},
+		}
+		l33tTrieMatchers = append(l33tTrieMatchers, newl33tTrieMatch(userInputMatcher, l33tTable))
+	}
 
 	matchers := []match.Matcher{
 		dictMatcher,
 		reverseDictionnaryMatch{dm: dictMatcher},
-		l33tMatch{dm: dictMatcher, table: l33tTable},
+	}
+
+	matchers = append(matchers, l33tTrieMatchers...)
+
+	matchers = append(matchers,
 		spatialMatch{graphs: defaultGraphs},
-		repeatMatch{},
+		repeatMatch{omnimatch: om.Omnimatch},
 		sequenceMatch{},
 		regexpMatch{regexes: defaultRegexpMatch},
 		dateMatch{},
-	}
+	)
 
 	for _, m := range matchers {
 		matches = append(matches, m.Matches(password)...)
@@ -29,15 +67,15 @@ func Omnimatch(password string, userInputs []string) (matches []*match.Match) {
 }
 
 var (
-	defaultRankedDictionnaries = loadDefaultDictionnaries()
-	defaultGraphs              = loadDefaultAdjacencyGraphs()
-	defaultRegexpMatch         = []struct {
+	defaultRankedDictionaries = loadDefaultDictionaries()
+	defaultGraphs             = loadDefaultAdjacencyGraphs()
+	defaultRegexpMatch        = []struct {
 		Name   string
 		Regexp *regexp.Regexp
 	}{
 		{
 			Name:   "recent_year",
-			Regexp: regexp.MustCompile(`19\d\d|200\d|201\d`),
+			Regexp: regexp.MustCompile(`\d{4}`),
 		},
 	}
 	l33tTable = map[string][]string{
@@ -56,7 +94,9 @@ var (
 	}
 )
 
-func loadDefaultDictionnaries() dictionaryMatch {
+var defaultOmnimatcher = NewOmnimatcher(nil)
+
+func loadDefaultDictionaries() dictionaryMatch {
 	rd := make(map[string]rankedDictionnary)
 	for n, list := range frequency.FrequencyLists {
 		rd[n] = buildRankedDict(list)
@@ -73,5 +113,4 @@ func loadDefaultAdjacencyGraphs() []*adjacency.Graph {
 		adjacency.Graphs["keypad"],
 		adjacency.Graphs["mac_keypad"],
 	}
-
 }

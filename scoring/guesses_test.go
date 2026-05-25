@@ -2,14 +2,15 @@ package scoring_test
 
 import (
 	"math"
+	"strconv"
 	"testing"
 
+	"github.com/eljamo/zxcvbn/adjacency"
+	"github.com/eljamo/zxcvbn/internal/mathutils"
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/matching"
+	"github.com/eljamo/zxcvbn/scoring"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn/adjacency"
-	"github.com/trustelem/zxcvbn/internal/mathutils"
-	"github.com/trustelem/zxcvbn/match"
-	"github.com/trustelem/zxcvbn/matching"
-	"github.com/trustelem/zxcvbn/scoring"
 )
 
 func TestRepeatGuesses(t *testing.T) {
@@ -83,8 +84,9 @@ func TestRegexGuesses(t *testing.T) {
 		RegexName: "recent_year",
 	}))
 
-	assert.EqualValues(t, mathutils.Abs(scoring.MinYearSpace), scoring.RegexGuesses(&match.Match{
-		Token:     "2005",
+	recentYear := strconv.Itoa(scoring.ReferenceYear - scoring.MinYearSpace + 1)
+	assert.EqualValues(t, scoring.MinYearSpace, scoring.RegexGuesses(&match.Match{
+		Token:     recentYear,
 		RegexName: "recent_year",
 	}))
 }
@@ -108,7 +110,6 @@ func TestDateGuesses(t *testing.T) {
 		Separator: "/",
 	}
 	assert.EqualValues(t, 365*scoring.MinYearSpace*4, scoring.DateGuesses(m))
-
 }
 
 func TestSpatialGuesses(t *testing.T) {

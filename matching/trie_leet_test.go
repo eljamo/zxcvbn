@@ -1,107 +1,24 @@
 package matching
 
 import (
-	"reflect"
-	"strconv"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-
 	"github.com/eljamo/zxcvbn/match"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )
 
-var testl33tTable = map[string][]string{
-	"a": {"4", "@"},
-	"c": {"(", "{", "[", "<"},
-	"g": {"6", "9"},
-	"o": {"0"},
-}
-
-func Test_relevantSubtable(t *testing.T) {
-	// reduces l33t table to only the substitutions that a password might be employing
-	tests := []struct {
-		password string
-		want     map[string][]string
-	}{
-		{
-			password: "",
-			want:     map[string][]string{},
-		},
-		{
-			password: "abcdefgo123578!#$&*)]}>",
-			want:     map[string][]string{},
-		},
-		{
-			password: "a",
-			want:     map[string][]string{},
-		},
-		{
-			password: "4",
-			want:     map[string][]string{"a": {"4"}},
-		},
-		{
-			password: "4@",
-			want:     map[string][]string{"a": {"4", "@"}},
-		},
-		{
-			password: "4({60",
-			want:     map[string][]string{"a": {"4"}, "c": {"(", "{"}, "g": {"6"}, "o": {"0"}},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.password, func(t *testing.T) {
-			if got := relevantSubtable(tt.password, testl33tTable); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("relevantSubtable() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_enumerateLeetSubs(t *testing.T) {
-	// enumerates the different sets of l33t substitutions a password might be using
-	type args struct {
-		table map[string][]string
-	}
-	tests := []struct {
-		table map[string][]string
-		want  []map[string]string
-	}{
-		{
-			table: map[string][]string{},
-			want:  []map[string]string{{}},
-		},
-		{
-			table: map[string][]string{"a": {"@"}},
-			want:  []map[string]string{{"@": "a"}},
-		},
-		{
-			table: map[string][]string{"a": {"@", "4"}},
-			want:  []map[string]string{{"@": "a"}, {"4": "a"}},
-		},
-		{
-			table: map[string][]string{"a": {"@", "4"}, "c": {"("}},
-			want:  []map[string]string{{"@": "a", "(": "c"}, {"4": "a", "(": "c"}},
-		},
-	}
-	for i, tt := range tests {
-		t.Run("test_"+strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.want, enumerateLeetSubs(tt.table))
-		})
-	}
-}
-
-func Test_l33tMatch(t *testing.T) {
-	lm := l33tMatch{
+func Test_l33tTrieMatch(t *testing.T) {
+	lm := l33tTrieMatch{
 		dm: dictionaryMatch{
 			rankedDictionaries: map[string]rankedDictionnary{
-				"words": rankedDictionnary{
+				"words": {
 					"aac":       1,
 					"password":  3,
 					"paassword": 4,
 					"asdf0":     5,
 				},
-				"words2": rankedDictionnary{
+				"words2": {
 					"cgo": 1,
 				},
 			},
@@ -229,19 +146,25 @@ func Test_l33tMatch(t *testing.T) {
 	// doesn't match single-character l33ted words
 	assert.Len(t, lm.Matches("4 1 @"), 0)
 
-	// known issue: subsets of substitutions aren't tried.
-	// for long inputs, trying every subset of every possible substitution could quickly get large,
-	// but there might be a performant way to fix.
-	// (so in this example: {'4': a, '0': 'o'} is detected as a possible sub,
-	// but the subset {'4': 'a'} isn't tried, missing the match for asdf0.)
-	// TODO: consider partially fixing by trying all subsets of size 1 and maybe 2
-	assert.Len(t, lm.Matches("4sdf0"), 0)
+	assert.Equal(t, []*match.Match{
+		{
+			Pattern:        "dictionary",
+			Token:          "4sdf0",
+			MatchedWord:    "asdf0",
+			Rank:           5,
+			DictionaryName: "words",
+			I:              0,
+			J:              4,
+			L33t:           true,
+			Sub:            map[string]string{"4": "a"},
+		},
+	}, lm.Matches("4sdf0"))
 }
 
-func TestLeetDeterministicOutput(t *testing.T) {
+func TestLeetTrieDeterministicOutput(t *testing.T) {
 	password := "coRrecth0rseba++ery9.23.2007staple$"
 
-	lm := l33tMatch{
+	lm := l33tTrieMatch{
 		dm:    defaultRankedDictionaries,
 		table: l33tTable,
 	}

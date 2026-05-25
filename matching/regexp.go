@@ -1,9 +1,14 @@
 package matching
 
 import (
-	"github.com/trustelem/zxcvbn/match"
 	"regexp"
+	"strconv"
+
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/scoring"
 )
+
+const recentYearPastWindow = 150
 
 type regexpMatch struct {
 	regexes []struct {
@@ -17,6 +22,9 @@ func (r regexpMatch) Matches(password string) []*match.Match {
 	for _, rx := range r.regexes {
 		for _, indexes := range rx.Regexp.FindAllStringIndex(password, -1) {
 			token := password[indexes[0]:indexes[1]]
+			if rx.Name == "recent_year" && !isRecentYear(token) {
+				continue
+			}
 			matches = append(matches, &match.Match{
 				Pattern:   "regex",
 				Token:     token,
@@ -28,4 +36,13 @@ func (r regexpMatch) Matches(password string) []*match.Match {
 	}
 	match.Sort(matches)
 	return matches
+}
+
+func isRecentYear(token string) bool {
+	year, err := strconv.Atoi(token)
+	if err != nil {
+		return false
+	}
+	return year >= scoring.ReferenceYear-recentYearPastWindow &&
+		year <= scoring.ReferenceYear+scoring.MinYearSpace
 }

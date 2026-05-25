@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/eljamo/zxcvbn/match"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn/match"
 )
 
 // removeRepeatBaseData removes extra data not needed for unit tests
@@ -36,7 +36,8 @@ func TestRepeatMatching(t *testing.T) {
 				J:           pv.j,
 				BaseToken:   "&",
 				RepeatCount: 5,
-			}}, matches)
+			},
+		}, matches)
 	}
 
 	// matches repeats with base character
@@ -53,7 +54,8 @@ func TestRepeatMatching(t *testing.T) {
 					J:           length - 1,
 					BaseToken:   chr,
 					RepeatCount: length,
-				}}, matches)
+				},
+			}, matches)
 		}
 	}
 

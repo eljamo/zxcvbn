@@ -3,10 +3,10 @@ package scoring_test
 import (
 	"testing"
 
+	"github.com/eljamo/zxcvbn"
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/scoring"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn"
-	"github.com/trustelem/zxcvbn/match"
-	"github.com/trustelem/zxcvbn/scoring"
 )
 
 func TestMostGuessableMatchSequence(t *testing.T) {
@@ -227,7 +227,6 @@ func TestMostGuessableMatchSequence(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestCalcGuesses(t *testing.T) {
@@ -256,7 +255,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			Rank:           12,
 			DictionaryName: "english_wikipedia",
 			Reversed:       true,
-			L33t:           false},
+			L33t:           false,
+		},
 		{
 			Pattern:        "dictionary",
 			I:              1,
@@ -266,7 +266,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			Rank:           12,
 			DictionaryName: "english_wikipedia",
 			Reversed:       false,
-			L33t:           false},
+			L33t:           false,
+		},
 	}
 	result := scoring.MostGuessableMatchSequence(password, seq, false)
 
@@ -276,7 +277,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			I:       0,
 			J:       9,
 			Token:   "eheuczkqyq",
-			Guesses: 10000000000},
+			Guesses: 10000000000,
+		},
 	}, result.Sequence) {
 		t.Logf("Got wrong sequence %s", match.ToString(result.Sequence))
 	}
@@ -290,7 +292,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			Token:        "qwER43@!",
 			Graph:        "qwerty",
 			Turns:        3,
-			ShiftedCount: 4},
+			ShiftedCount: 4,
+		},
 		{
 			Pattern:        "dictionary",
 			I:              1,
@@ -300,7 +303,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			Rank:           20,
 			DictionaryName: "us_tv_and_film",
 			Reversed:       false,
-			L33t:           false},
+			L33t:           false,
+		},
 		{
 			Pattern:        "dictionary",
 			I:              2,
@@ -311,7 +315,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			DictionaryName: "english_wikipedia",
 			Reversed:       false,
 			L33t:           true,
-			Sub:            map[string]string{"4": "a"}},
+			Sub:            map[string]string{"4": "a"},
+		},
 		{
 			Pattern:        "dictionary",
 			I:              3,
@@ -322,7 +327,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			DictionaryName: "female_names",
 			Reversed:       false,
 			L33t:           true,
-			Sub:            map[string]string{"3": "e", "4": "a"}},
+			Sub:            map[string]string{"3": "e", "4": "a"},
+		},
 		{
 			Pattern:       "sequence",
 			I:             4,
@@ -330,7 +336,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			Token:         "43",
 			SequenceName:  "digits",
 			SequenceSpace: 10,
-			Ascending:     false},
+			Ascending:     false,
+		},
 		{
 			Pattern:      "spatial",
 			I:            4,
@@ -338,7 +345,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			Token:        "43@!",
 			Graph:        "dvorak",
 			Turns:        1,
-			ShiftedCount: 2},
+			ShiftedCount: 2,
+		},
 	}
 
 	expectedSeq := []*match.Match{
@@ -350,7 +358,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			Graph:        "qwerty",
 			Turns:        3,
 			ShiftedCount: 4,
-			Guesses:      90470620.03078316},
+			Guesses:      90470620.03078316,
+		},
 		{
 			Pattern:             "dictionary",
 			I:                   1,
@@ -364,7 +373,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			BaseGuesses:         20,
 			UppercaseVariations: 2,
 			L33tVariations:      1,
-			Guesses:             50},
+			Guesses:             50,
+		},
 		{
 			Pattern:             "dictionary",
 			I:                   2,
@@ -379,7 +389,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			BaseGuesses:         744,
 			UppercaseVariations: 2,
 			L33tVariations:      2,
-			Guesses:             2976},
+			Guesses:             2976,
+		},
 		{
 			Pattern:             "dictionary",
 			I:                   3,
@@ -394,7 +405,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			BaseGuesses:         712,
 			UppercaseVariations: 2,
 			L33tVariations:      4,
-			Guesses:             5696},
+			Guesses:             5696,
+		},
 		{
 			Pattern:       "sequence",
 			I:             4,
@@ -403,7 +415,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			SequenceName:  "digits",
 			SequenceSpace: 10,
 			Ascending:     false,
-			Guesses:       50},
+			Guesses:       50,
+		},
 		{
 			Pattern:      "spatial",
 			I:            4,
@@ -412,7 +425,8 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			Graph:        "dvorak",
 			Turns:        1,
 			ShiftedCount: 2,
-			Guesses:      12960.000000000002},
+			Guesses:      12960.000000000002,
+		},
 	}
 
 	result = scoring.MostGuessableMatchSequence(password, seq, true)
@@ -428,15 +442,15 @@ func TestMostGuessableMatchSequenceCoffeeScriptCompat(t *testing.T) {
 			Token:   "qwER43@!", Graph: "qwerty",
 			Turns:        3,
 			ShiftedCount: 4,
-			Guesses:      90470620.03078316},
+			Guesses:      90470620.03078316,
+		},
 	}, result.Sequence) {
 		t.Logf("Got wrong most guessable sequence %s", match.ToString(result.Sequence))
 	}
-
 }
 
 func TestNonContinguousKeys(t *testing.T) {
-	//check that a case which give non-contiguous keys in optimal.g
-	//doesn't cause a crash
+	// check that a case which give non-contiguous keys in optimal.g
+	// doesn't cause a crash
 	_ = zxcvbn.PasswordStrength("001��000", nil)
 }

@@ -3,7 +3,7 @@ package matching
 import (
 	"regexp"
 
-	"github.com/trustelem/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/match"
 )
 
 type sequenceMatch struct{}
@@ -17,9 +17,11 @@ func abs(a int) int {
 	return a
 }
 
-var reLower = regexp.MustCompile(`^[a-z]+$`)
-var reUpper = regexp.MustCompile(`^[A-Z]+$`)
-var reDigits = regexp.MustCompile(`^\d+$`)
+var (
+	reLower  = regexp.MustCompile(`^[a-z]+$`)
+	reUpper  = regexp.MustCompile(`^[A-Z]+$`)
+	reDigits = regexp.MustCompile(`^\d+$`)
+)
 
 func (sequenceMatch) Matches(password string) []*match.Match {
 	matches := []*match.Match{}
@@ -36,11 +38,12 @@ func (sequenceMatch) Matches(password string) []*match.Match {
 				// (this could be improved)
 				seqName := "unicode"
 				seqSpace := 26
-				if reLower.MatchString(token) {
+				switch {
+				case reLower.MatchString(token):
 					seqName = "lower"
-				} else if reUpper.MatchString(token) {
+				case reUpper.MatchString(token):
 					seqName = "upper"
-				} else if reDigits.MatchString(token) {
+				case reDigits.MatchString(token):
 					seqName = "digits"
 					seqSpace = 10
 				}
