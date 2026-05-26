@@ -1,17 +1,14 @@
 [![GoDoc](https://godoc.org/github.com/eljamo/zxcvbn?status.svg)](https://godoc.org/github.com/eljamo/zxcvbn)
-[![Coverage Status](https://coveralls.io/repos/github/trustelem/zxcvbn/badge.svg?branch=master)](https://coveralls.io/github/trustelem/zxcvbn?branch=master)
 
-This is a go port of [zxcvbn](https://github.com/dropbox/zxcvbn), a password strength estimator inspired by password crackers. Through pattern matching and conservative estimation, it recognizes and weighs 30k common passwords, common names and surnames according to US census data, popular English words from Wikipedia and US television and movies, and other common patterns like dates, repeats (aaa), sequences (abcd), keyboard patterns (qwertyuiop), and l33t speak.
+# zxcvbn
 
-This port aims to be fully compatible (i.e. give the same results for a given password using the same set of dictionaries) with the upstream coffeescript libray from Dropbox: all unit tests from the upstream library have been ported (and even more tests have been added) to ensure that this holds.
+This project is a fork of [trustelem/zxcvbn](https://github.com/trustelem/zxcvbn), the Go port of [dropbox/zxcvbn](https://github.com/dropbox/zxcvbn).
 
----
+It estimates password strength by looking at how real-world password crackers work. Instead of relying only on length or character rules, it checks for common patterns such as frequently used passwords, names and surnames from U.S. Census data, popular English words, dates, repeated characters, sequences, keyboard walks like qwerty, and l33t substitutions. It then uses those matches to give a conservative estimate of how difficult the password would be to guess.
 
-Current status:
+While [trustelem/zxcvbn](https://github.com/trustelem/zxcvbn) focused on being a 1:1 port of [dropbox/zxcvbn](https://github.com/dropbox/zxcvbn), including matching its output, this fork prioritises improvements over strict output parity.
 
-- this library should be 100% compatible (score, sequence and number of guesses) with [release 4.4.2](https://github.com/dropbox/zxcvbn/releases/tag/v4.4.2) of the coffeescript library.
-- feedback messages are missing
+# Modifications
 
-## Modifications
-
-- Dates now correctly detect the year when it's a YYYY pattern
+- Improved year detection so recent years are handled dynamically and the regex no longer needs updating for each new decade.
+- Improved l33t matching for mixed substitutions, so variants like `p@5$w0rd` are recognized as `password`
