@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	password := "corr3cth0rsebatt3rystap13"
+	password := "p@5$w0rd"
 
 	result := zxcvbn.PasswordStrength(password, nil)
 

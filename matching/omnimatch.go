@@ -9,8 +9,8 @@ import (
 )
 
 type Omnimatcher struct {
-	dictMatcher     dictionaryMatch
-	l33tTrieMatcher l33tTrieMatch
+	dictMatcher dictionaryMatch
+	l33tMatcher l33tMatch
 }
 
 func NewOmnimatcher(customDictionaries map[string][]string) Omnimatcher {
@@ -20,8 +20,8 @@ func NewOmnimatcher(customDictionaries map[string][]string) Omnimatcher {
 	}
 
 	return Omnimatcher{
-		dictMatcher:     dictMatcher,
-		l33tTrieMatcher: newl33tTrieMatch(dictMatcher, l33tTable),
+		dictMatcher: dictMatcher,
+		l33tMatcher: newl33tMatch(dictMatcher, l33tTable),
 	}
 }
 
@@ -31,7 +31,7 @@ func Omnimatch(password string, userInputs []string) (matches []*match.Match) {
 
 func (om Omnimatcher) Omnimatch(password string, userInputs []string) (matches []*match.Match) {
 	dictMatcher := om.dictMatcher
-	l33tTrieMatchers := []match.Matcher{om.l33tTrieMatcher}
+	l33tMatchers := []match.Matcher{om.l33tMatcher}
 
 	if len(userInputs) > 0 {
 		userInputDict := buildRankedDict(userInputs)
@@ -41,7 +41,7 @@ func (om Omnimatcher) Omnimatch(password string, userInputs []string) (matches [
 				"user_inputs": userInputDict,
 			},
 		}
-		l33tTrieMatchers = append(l33tTrieMatchers, newl33tTrieMatch(userInputMatcher, l33tTable))
+		l33tMatchers = append(l33tMatchers, newl33tMatch(userInputMatcher, l33tTable))
 	}
 
 	matchers := []match.Matcher{
@@ -49,7 +49,7 @@ func (om Omnimatcher) Omnimatch(password string, userInputs []string) (matches [
 		reverseDictionnaryMatch{dm: dictMatcher},
 	}
 
-	matchers = append(matchers, l33tTrieMatchers...)
+	matchers = append(matchers, l33tMatchers...)
 
 	matchers = append(matchers,
 		spatialMatch{graphs: defaultGraphs},

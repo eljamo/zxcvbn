@@ -10,15 +10,15 @@ import (
 	"github.com/eljamo/zxcvbn/match"
 )
 
-type l33tTrieMatch struct {
+type l33tMatch struct {
 	dm            dictionaryMatch
 	table         map[string][]string
 	trieRoot      *dictionaryTrieNode
 	reversedTable map[rune][]rune
 }
 
-func newl33tTrieMatch(dm dictionaryMatch, table map[string][]string) l33tTrieMatch {
-	return l33tTrieMatch{
+func newl33tMatch(dm dictionaryMatch, table map[string][]string) l33tMatch {
+	return l33tMatch{
 		dm:            dm,
 		table:         table,
 		trieRoot:      buildDictionaryTrie(dm.rankedDictionaries),
@@ -26,7 +26,7 @@ func newl33tTrieMatch(dm dictionaryMatch, table map[string][]string) l33tTrieMat
 	}
 }
 
-func (lm l33tTrieMatch) Matches(password string) []*match.Match {
+func (lm l33tMatch) Matches(password string) []*match.Match {
 	matches := []*match.Match{}
 
 	root := lm.trieRoot
@@ -167,16 +167,14 @@ func buildDictionaryTrie(dicts map[string]rankedDictionnary) *dictionaryTrieNode
 }
 
 type l33tState struct {
-	node      *dictionaryTrieNode
-	sub       map[rune]rune
-	usedPlain map[rune]rune
+	node *dictionaryTrieNode
+	sub  map[rune]rune
 }
 
 func (state l33tState) clone() l33tState {
 	return l33tState{
-		node:      state.node,
-		sub:       copyRuneMap(state.sub),
-		usedPlain: copyRuneMap(state.usedPlain),
+		node: state.node,
+		sub:  copyRuneMap(state.sub),
 	}
 }
 
@@ -184,19 +182,12 @@ func (state l33tState) withSubstitution(l33t, plain rune) (l33tState, bool) {
 	if existing, ok := state.sub[l33t]; ok && existing != plain {
 		return l33tState{}, false
 	}
-	if existing, ok := state.usedPlain[plain]; ok && existing != l33t {
-		return l33tState{}, false
-	}
 
 	next := state.clone()
 	if next.sub == nil {
 		next.sub = make(map[rune]rune)
 	}
-	if next.usedPlain == nil {
-		next.usedPlain = make(map[rune]rune)
-	}
 	next.sub[l33t] = plain
-	next.usedPlain[plain] = l33t
 	return next, true
 }
 
