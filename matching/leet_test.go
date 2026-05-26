@@ -13,6 +13,7 @@ var testl33tTable = map[string][]string{
 	"c": {"(", "{", "[", "<"},
 	"g": {"6", "9"},
 	"o": {"0"},
+	"s": {"5", "$"},
 }
 
 func Test_l33tMatch(t *testing.T) {
@@ -138,9 +139,21 @@ func Test_l33tMatch(t *testing.T) {
 			},
 		},
 		{
-			name:     "doesn't match when multiple l33t substitutions are needed for the same letter",
-			password: "p4@ssword",
-			want:     []*match.Match{},
+			name:     "matches when multiple l33t substitutions are needed for the same letter",
+			password: "p@5$word",
+			want: []*match.Match{
+				{
+					Pattern:        "dictionary",
+					Token:          "p@5$word",
+					MatchedWord:    "password",
+					Rank:           3,
+					DictionaryName: "words",
+					I:              0,
+					J:              7,
+					L33t:           true,
+					Sub:            map[string]string{"@": "a", "5": "s", "$": "s"},
+				},
+			},
 		},
 	}
 
