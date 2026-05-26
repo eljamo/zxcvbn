@@ -76,11 +76,6 @@ type dateMatch struct{}
 func (dm dateMatch) Matches(password string) []*match.Match {
 	matches := []*match.Match{}
 
-	// dates where it's simply the year as a four digit representation (eg 1991)
-	// if m, err := maybeDateNoSeparator.MatchString(password); !m || err != nil {
-	//	yy, _ := strconv.Atoi(password)
-	//}
-
 	// dates without separators are between length 4 '1191' and 8 '11111991'
 	for i := 0; i <= len(password)-4; i++ {
 		for j := i + 3; j <= i+7; j++ {
