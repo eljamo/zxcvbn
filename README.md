@@ -12,3 +12,85 @@ While [trustelem/zxcvbn](https://github.com/trustelem/zxcvbn) focused on being a
 
 - Improved year detection so recent years are handled dynamically and the regex no longer needs updating for each new decade.
 - Improved l33t matching for mixed substitutions, so variants like `p@5$w0rd` are recognized as `password`
+
+# Fork Comparison
+
+## Basic Example of trustelem/zxcvbn
+
+## Program
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/trustelem/zxcvbn"
+)
+
+func main() {
+	password := "p@5$w0rd"
+
+	result := zxcvbn.PasswordStrength(password, nil)
+
+	fmt.Printf("Password: %s\n", password)
+	fmt.Printf("Score: %d/4\n", result.Score)
+	fmt.Printf("Guesses: %.0f\n", result.Guesses)
+	fmt.Printf("Calculation time: %.3fs\n", result.CalcTime)
+}
+```
+
+## Output
+
+```
+~/c/g/zxcvbn-trustelem (master|✚1) $ go run ./example/basic/main.go
+Password: p@5$w0rd
+Score: 2/4
+Guesses: 12330000
+Calculation time: 0.000s
+```
+
+## Basic Example of eljamo/zxcvbn
+
+## Program
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/eljamo/zxcvbn"
+)
+
+func main() {
+	password := "p@5$w0rd"
+
+	result := zxcvbn.PasswordStrength(password, nil)
+
+	fmt.Printf("Password: %s\n", password)
+	fmt.Printf("Score: %d/4\n", result.Score)
+	fmt.Printf("Guesses: %.0f\n", result.Guesses)
+	fmt.Printf("Guesses (log10): %.2f\n", result.GuessesLog10)
+	fmt.Printf("Online throttled crack time: %s\n", result.CrackTimesDisplay["online_throttling_100_per_hour"])
+	fmt.Printf("Online unthrottled crack time: %s\n", result.CrackTimesDisplay["online_no_throttling_10_per_second"])
+	fmt.Printf("Offline fast hash crack time: %s\n", result.CrackTimesDisplay["offline_fast_hashing_1e10_per_second"])
+	fmt.Printf("Offline slow hash crack time: %s\n", result.CrackTimesDisplay["offline_slow_hashing_1e4_per_second"])
+	fmt.Printf("Calculation time: %.3fs\n", result.CalcTime)
+}
+```
+
+## Output
+
+```
+~/c/g/zxcvbn (main|✔) $ go run ./example/basic/main.go
+Password: p@5$w0rd
+Score: 0/4
+Guesses: 33
+Guesses (log10): 1.52
+Online throttled crack time: 20 minutes
+Online unthrottled crack time: 3 seconds
+Offline fast hash crack time: less than a second
+Offline slow hash crack time: less than a second
+Calculation time: 0.000s
+```
