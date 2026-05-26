@@ -8,9 +8,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/trustelem/zxcvbn/adjacency"
-	"github.com/trustelem/zxcvbn/internal/mathutils"
-	"github.com/trustelem/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/adjacency"
+	"github.com/eljamo/zxcvbn/internal/mathutils"
+	"github.com/eljamo/zxcvbn/match"
 )
 
 const (
@@ -91,10 +91,12 @@ func DictionaryGuesses(m *match.Match) float64 {
 	return float64(m.BaseGuesses) * float64(m.UppercaseVariations) * float64(m.L33tVariations) * float64(reversedVariations)
 }
 
-var reStartUpper = regexp.MustCompile(`^[A-Z][^A-Z]+$`)
-var reEndUpper = regexp.MustCompile(`^[^A-Z]+[A-Z]$`)
-var reAllUpper = regexp.MustCompile(`^[^a-z]+$`)
-var reAllLower = regexp.MustCompile(`^[^A-Z]+$`)
+var (
+	reStartUpper = regexp.MustCompile(`^[A-Z][^A-Z]+$`)
+	reEndUpper   = regexp.MustCompile(`^[^A-Z]+[A-Z]$`)
+	reAllUpper   = regexp.MustCompile(`^[^a-z]+$`)
+	reAllLower   = regexp.MustCompile(`^[^A-Z]+$`)
+)
 
 func UppercaseVariations(w string) float64 {
 	if reAllLower.MatchString(w) || strings.ToLower(w) == w {

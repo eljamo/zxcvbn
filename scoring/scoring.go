@@ -4,8 +4,8 @@ import (
 	"math"
 	"sort"
 
-	"github.com/trustelem/zxcvbn/internal/mathutils"
-	"github.com/trustelem/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/internal/mathutils"
+	"github.com/eljamo/zxcvbn/match"
 )
 
 type Result struct {
@@ -27,7 +27,7 @@ type Result struct {
 // the optimal "minimum guesses" sequence is here defined to be the sequence that
 // minimizes the following function:
 //
-//    g = l! * Product(m.guesses for m in sequence) + D^(l - 1)
+//	g = l! * Product(m.guesses for m in sequence) + D^(l - 1)
 //
 // where l is the length of the sequence.
 //
@@ -37,14 +37,13 @@ type Result struct {
 // attacker will try lower-length sequences first before trying length-l sequences.
 //
 // for example, consider a sequence that is date-repeat-dictionary.
-//  - an attacker would need to try other date-repeat-dictionary combinations,
-//    hence the product term.
-//  - an attacker would need to try repeat-date-dictionary, dictionary-repeat-date,
-//    ..., hence the factorial term.
-//  - an attacker would also likely try length-1 (dictionary) and length-2 (dictionary-date)
-//    sequences before length-3. assuming at minimum D guesses per pattern type,
-//    D^(l-1) approximates Sum(D^i for i in [1..l-1]
-//
+//   - an attacker would need to try other date-repeat-dictionary combinations,
+//     hence the product term.
+//   - an attacker would need to try repeat-date-dictionary, dictionary-repeat-date,
+//     ..., hence the factorial term.
+//   - an attacker would also likely try length-1 (dictionary) and length-2 (dictionary-date)
+//     sequences before length-3. assuming at minimum D guesses per pattern type,
+//     D^(l-1) approximates Sum(D^i for i in [1..l-1]
 func MostGuessableMatchSequence(password string, matches []*match.Match, excludeAdditive bool) (result Result) {
 	n := len(password)
 	validIndexes := make([]bool, n)
@@ -84,17 +83,17 @@ func MostGuessableMatchSequence(password string, matches []*match.Match, exclude
 	}
 
 	optimal.m = make([]map[int]*match.Match, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		optimal.m[i] = make(map[int]*match.Match)
 	}
 
 	optimal.pi = make([]map[int]float64, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		optimal.pi[i] = make(map[int]float64)
 	}
 
 	optimal.g = make([]map[int]float64, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		optimal.g[i] = make(map[int]float64)
 	}
 
@@ -146,7 +145,7 @@ func MostGuessableMatchSequence(password string, matches []*match.Match, exclude
 			// see if adding these new matches to any of the sequences in optimal[i-1]
 			// leads to new bests.
 			m := makeBruteforceMatch(i, k, password)
-			for l := 0; l < n; l++ {
+			for l := range n {
 				lastM, ok := optimal.m[prev][l]
 				if !ok {
 					continue
@@ -186,9 +185,9 @@ func MostGuessableMatchSequence(password string, matches []*match.Match, exclude
 				m, ok := optimal.m[k][l]
 				l--
 				if !ok {
-					//we're counting down through the potential keys (l). It's possible that
-					//the keys are non-contiguous so we need to skip values of l which aren't
-					//valid keys
+					// we're counting down through the potential keys (l). It's possible that
+					// the keys are non-contiguous so we need to skip values of l which aren't
+					// valid keys
 					continue
 				}
 				optimalMatchSequence = append([]*match.Match{m}, optimalMatchSequence...)
@@ -199,10 +198,10 @@ func MostGuessableMatchSequence(password string, matches []*match.Match, exclude
 		return optimalMatchSequence
 	}
 
-	for k := 0; k < n; k++ {
+	for k := range n {
 		for _, m := range matchesByJ[k] {
 			if m.I > 0 {
-				for l := 0; l < n; l++ {
+				for l := range n {
 					if optimal.m[m.I-1][l] != nil {
 						update(m, l+1)
 					}
@@ -229,7 +228,7 @@ func MostGuessableMatchSequence(password string, matches []*match.Match, exclude
 	result.Password = password
 	result.Guesses = guesses
 	result.Sequence = optimalMatchSequence
-	return
+	return result
 }
 
 // helper: make bruteforce match objects spanning i to j, inclusive.

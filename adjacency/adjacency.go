@@ -33,7 +33,6 @@ func calculateAvgDegree(g map[string][]string) float64 {
 				avg += float64(1)
 			}
 		}
-
 	}
 
 	return avg / float64(len(g))

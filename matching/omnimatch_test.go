@@ -1,11 +1,10 @@
 package matching
 
 import (
-	"encoding/json"
-	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn/match"
-	"os"
 	"testing"
+
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOmnimatch(t *testing.T) {
@@ -42,7 +41,8 @@ func TestOmnimatch(t *testing.T) {
 			Token:         "abcde",
 			SequenceName:  "lower",
 			SequenceSpace: 26,
-			Ascending:     true},
+			Ascending:     true,
+		},
 		{
 			Pattern:      "spatial",
 			I:            2,
@@ -50,12 +50,12 @@ func TestOmnimatch(t *testing.T) {
 			Token:        "cde",
 			Graph:        "qwerty",
 			Turns:        1,
-			ShiftedCount: 0},
+			ShiftedCount: 0,
+		},
 	}, matches)
 
 	password = "qwER43@!"
 	matches = Omnimatch(password, nil)
-	json.NewEncoder(os.Stdout).Encode(matches)
 	assert.Equal(t, []*match.Match{
 		{
 			Pattern:      "spatial",
@@ -64,7 +64,8 @@ func TestOmnimatch(t *testing.T) {
 			Token:        "qwER43@!",
 			Graph:        "qwerty",
 			Turns:        3,
-			ShiftedCount: 4},
+			ShiftedCount: 4,
+		},
 		{
 			Pattern:        "dictionary",
 			I:              1,
@@ -74,7 +75,8 @@ func TestOmnimatch(t *testing.T) {
 			Rank:           20,
 			DictionaryName: "us_tv_and_film",
 			Reversed:       false,
-			L33t:           false},
+			L33t:           false,
+		},
 		{
 			Pattern:        "dictionary",
 			I:              2,
@@ -85,7 +87,8 @@ func TestOmnimatch(t *testing.T) {
 			DictionaryName: "english_wikipedia",
 			Reversed:       false,
 			L33t:           true,
-			Sub:            map[string]string{"4": "a"}},
+			Sub:            map[string]string{"4": "a"},
+		},
 		{
 			Pattern:        "dictionary",
 			I:              3,
@@ -96,7 +99,8 @@ func TestOmnimatch(t *testing.T) {
 			DictionaryName: "female_names",
 			Reversed:       false,
 			L33t:           true,
-			Sub:            map[string]string{"3": "e", "4": "a"}},
+			Sub:            map[string]string{"3": "e", "4": "a"},
+		},
 		{
 			Pattern:       "sequence",
 			I:             4,
@@ -104,7 +108,8 @@ func TestOmnimatch(t *testing.T) {
 			Token:         "43",
 			SequenceName:  "digits",
 			SequenceSpace: 10,
-			Ascending:     false},
+			Ascending:     false,
+		},
 		{
 			Pattern:      "spatial",
 			I:            4,
@@ -112,7 +117,8 @@ func TestOmnimatch(t *testing.T) {
 			Token:        "43@!",
 			Graph:        "dvorak",
 			Turns:        1,
-			ShiftedCount: 2},
+			ShiftedCount: 2,
+		},
 	}, matches)
 
 	password = "eheuczkqyq"
@@ -127,7 +133,8 @@ func TestOmnimatch(t *testing.T) {
 			Rank:           12,
 			DictionaryName: "english_wikipedia",
 			Reversed:       true,
-			L33t:           false},
+			L33t:           false,
+		},
 		{
 			Pattern:        "dictionary",
 			I:              1,
@@ -137,6 +144,63 @@ func TestOmnimatch(t *testing.T) {
 			Rank:           12,
 			DictionaryName: "english_wikipedia",
 			Reversed:       false,
-			L33t:           false},
+			L33t:           false,
+		},
 	}, matches)
+}
+
+func TestOmnimatchUserInputL33t(t *testing.T) {
+	matches := Omnimatch("kwyjib0", []string{"kwyjibo"})
+
+	assert.Contains(t, matches, &match.Match{
+		Pattern:        "dictionary",
+		I:              0,
+		J:              6,
+		Token:          "kwyjib0",
+		MatchedWord:    "kwyjibo",
+		Rank:           1,
+		DictionaryName: "user_inputs",
+		L33t:           true,
+		Sub:            map[string]string{"0": "o"},
+	})
+}
+
+func TestConfiguredOmnimatcherCustomDictionaryL33t(t *testing.T) {
+	omnimatcher := NewOmnimatcher(map[string][]string{
+		"custom": {"kwyjibo"},
+	})
+	matches := omnimatcher.Omnimatch("kwyjib0", nil)
+
+	assert.Contains(t, matches, &match.Match{
+		Pattern:        "dictionary",
+		I:              0,
+		J:              6,
+		Token:          "kwyjib0",
+		MatchedWord:    "kwyjibo",
+		Rank:           1,
+		DictionaryName: "custom",
+		L33t:           true,
+		Sub:            map[string]string{"0": "o"},
+	})
+}
+
+func TestOmnimatcherUserInputsAreEphemeral(t *testing.T) {
+	omnimatcher := NewOmnimatcher(nil)
+	password := "zzephemeralnonce"
+
+	matches := omnimatcher.Omnimatch(password, []string{password})
+	assert.Contains(t, matches, &match.Match{
+		Pattern:        "dictionary",
+		I:              0,
+		J:              15,
+		Token:          password,
+		MatchedWord:    password,
+		Rank:           1,
+		DictionaryName: "user_inputs",
+	})
+
+	matches = omnimatcher.Omnimatch(password, nil)
+	for _, m := range matches {
+		assert.NotEqual(t, "user_inputs", m.DictionaryName)
+	}
 }

@@ -2,8 +2,9 @@ package mathutils
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_NCk(t *testing.T) {
@@ -33,5 +34,4 @@ func Test_NCk(t *testing.T) {
 	k := 12
 	assert.Equal(t, NCk(n, k), NCk(n, n-k), "mirror identity")
 	assert.Equal(t, NCk(n, k), NCk(n-1, k-1)+NCk(n-1, k), "pascal's triangle identity")
-
 }

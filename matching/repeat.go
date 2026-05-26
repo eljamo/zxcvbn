@@ -2,15 +2,19 @@ package matching
 
 import (
 	"github.com/dlclark/regexp2"
-	"github.com/trustelem/zxcvbn/match"
-	"github.com/trustelem/zxcvbn/scoring"
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/scoring"
 )
 
-type repeatMatch struct{}
+type repeatMatch struct {
+	omnimatch func(password string, userInputs []string) []*match.Match
+}
 
-var greedy = regexp2.MustCompile(`(.+)\1+`, 0)
-var lazy = regexp2.MustCompile(`(.+?)\1+`, 0)
-var lazyAnchored = regexp2.MustCompile(`^(.+?)\1+$`, 0)
+var (
+	greedy       = regexp2.MustCompile(`(.+)\1+`, 0)
+	lazy         = regexp2.MustCompile(`(.+?)\1+`, 0)
+	lazyAnchored = regexp2.MustCompile(`^(.+?)\1+$`, 0)
+)
 
 func runeToStringIndex(index int, password string) int {
 	runes := 0
@@ -20,12 +24,16 @@ func runeToStringIndex(index int, password string) int {
 		}
 		runes++
 	}
-	//shouldn't really get here
+	// shouldn't really get here
 	return len(password)
 }
 
-func (repeatMatch) Matches(password string) []*match.Match {
+func (rm repeatMatch) Matches(password string) []*match.Match {
 	var matches []*match.Match
+	omnimatch := rm.omnimatch
+	if omnimatch == nil {
+		omnimatch = Omnimatch
+	}
 
 	lastIndex := 0
 	for lastIndex < len(password) {
@@ -65,7 +73,7 @@ func (repeatMatch) Matches(password string) []*match.Match {
 		// recursively match and score the base string
 		baseAnalysis := scoring.MostGuessableMatchSequence(
 			baseToken,
-			Omnimatch(baseToken, nil),
+			omnimatch(baseToken, nil),
 			false,
 		)
 		matches = append(matches, &match.Match{

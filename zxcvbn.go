@@ -1,22 +1,44 @@
 package zxcvbn
 
 import (
-	"github.com/trustelem/zxcvbn/match"
+	"math"
 	"time"
 	"unicode/utf8"
 
-	"github.com/trustelem/zxcvbn/matching"
-	"github.com/trustelem/zxcvbn/scoring"
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/matching"
+	"github.com/eljamo/zxcvbn/scoring"
 )
 
 type Result struct {
-	Guesses  float64
-	Sequence []*match.Match
-	Score    int
-	CalcTime float64
+	Guesses      float64        `json:"guesses"`
+	GuessesLog10 float64        `json:"guesses_log10"`
+	Sequence     []*match.Match `json:"sequence"`
+	CalcTime     float64        `json:"calc_time"`
+	EstimatedTimes
 }
 
+type Config struct {
+	CustomDictionaries map[string][]string
+}
+
+type Estimator struct {
+	matcher matching.Omnimatcher
+}
+
+func NewEstimator(config Config) *Estimator {
+	return &Estimator{
+		matcher: matching.NewOmnimatcher(config.CustomDictionaries),
+	}
+}
+
+var defaultEstimator = NewEstimator(Config{})
+
 func PasswordStrength(password string, userInputs []string) Result {
+	return defaultEstimator.PasswordStrength(password, userInputs)
+}
+
+func (e *Estimator) PasswordStrength(password string, userInputs []string) Result {
 	start := time.Now()
 	var result Result
 	if !utf8.ValidString(password) {
@@ -24,13 +46,12 @@ func PasswordStrength(password string, userInputs []string) Result {
 		// => those will be reported as weak passwords
 		return result
 	}
-	matches := matching.Omnimatch(password, userInputs)
+	matches := e.matcher.Omnimatch(password, userInputs)
 	seq := scoring.MostGuessableMatchSequence(password, matches, false)
-	end := time.Now()
-	calcTime := end.Nanosecond() - start.Nanosecond()
-	result.CalcTime = round(float64(calcTime)*time.Nanosecond.Seconds(), .5, 3)
 	result.Sequence = seq.Sequence
 	result.Guesses = seq.Guesses
-	result.Score = guessesToScore(seq.Guesses)
+	result.GuessesLog10 = math.Log10(seq.Guesses)
+	result.EstimatedTimes = estimateAttackTimes(seq.Guesses)
+	result.CalcTime = time.Since(start).Seconds()
 	return result
 }

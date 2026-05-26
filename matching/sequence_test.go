@@ -3,8 +3,8 @@ package matching
 import (
 	"testing"
 
+	"github.com/eljamo/zxcvbn/match"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn/match"
 )
 
 func Test_sequenceMatch_Matches(t *testing.T) {
@@ -58,8 +58,8 @@ func Test_sequenceMatch_Matches(t *testing.T) {
 				Ascending:     false,
 				SequenceName:  "lower",
 				SequenceSpace: 26,
-			}}, s.Matches(pv.password))
-
+			},
+		}, s.Matches(pv.password))
 	}
 
 	// matches pattern with the right sequence type

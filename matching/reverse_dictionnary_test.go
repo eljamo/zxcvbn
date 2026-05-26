@@ -3,15 +3,15 @@ package matching
 import (
 	"testing"
 
+	"github.com/eljamo/zxcvbn/match"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn/match"
 )
 
 func Test_reverseDictionnaryMatch(t *testing.T) {
 	rdm := reverseDictionnaryMatch{
 		dm: dictionaryMatch{
 			rankedDictionaries: map[string]rankedDictionnary{
-				"d1": rankedDictionnary{
+				"d1": {
 					"123": 1,
 					"321": 2,
 					"456": 3,

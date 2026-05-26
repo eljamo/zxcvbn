@@ -3,9 +3,9 @@ package matching
 import (
 	"testing"
 
+	"github.com/eljamo/zxcvbn/adjacency"
+	"github.com/eljamo/zxcvbn/match"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn/adjacency"
-	"github.com/trustelem/zxcvbn/match"
 )
 
 func Test_spatialMatch(t *testing.T) {
@@ -28,7 +28,7 @@ func Test_spatialMatch(t *testing.T) {
 		{
 			Pattern:      "spatial",
 			Token:        pattern,
-			I:            03,
+			I:            0o3,
 			J:            3 + len(pattern) - 1,
 			Graph:        "qwerty",
 			Turns:        2,

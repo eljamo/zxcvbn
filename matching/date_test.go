@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/eljamo/zxcvbn/match"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn/match"
 )
 
 func Test_dateMatch(t *testing.T) {
@@ -152,9 +152,43 @@ func Test_dateMatch(t *testing.T) {
 				Year:      1991,
 				Month:     1,
 				Day:       1,
-			}}, dateMatch{}.Matches(pv.password))
-
+			},
+		}, dateMatch{}.Matches(pv.password))
 	}
+
+	// matches year only dates - 2024
+	password = "test2024"
+	assert.Equal(t, []*match.Match{
+		{
+			Pattern:   "date",
+			Token:     "2024",
+			I:         4,
+			J:         7,
+			Separator: "",
+			Year:      2024,
+			Month:     0,
+			Day:       0,
+		},
+	},
+		dateMatch{}.Matches(password),
+	)
+
+	// matches year only dates - 2019
+	password = "test2019!!"
+	assert.Equal(t, []*match.Match{
+		{
+			Pattern:   "date",
+			Token:     "2019",
+			I:         4,
+			J:         7,
+			Separator: "",
+			Year:      2019,
+			Month:     0,
+			Day:       0,
+		},
+	},
+		dateMatch{}.Matches(password),
+	)
 
 	// matches overlapping dates
 	password = "12/20/1991.12.20"
@@ -195,7 +229,8 @@ func Test_dateMatch(t *testing.T) {
 			Year:      1991,
 			Month:     12,
 			Day:       20,
-		}}, dateMatch{}.Matches(password))
+		},
+	}, dateMatch{}.Matches(password))
 }
 
 func Test_twoToFourDigitYear(t *testing.T) {
