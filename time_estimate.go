@@ -7,22 +7,22 @@ import (
 
 type EstimatedTimes struct {
 	CrackTimesSeconds map[string]float64 `json:"crack_times_seconds"`
-	CrashTimesDisplay map[string]string  `json:"crack_times_display"`
-	Score             int
+	CrackTimesDisplay map[string]string  `json:"crack_times_display"`
+	Score             int                `json:"score"`
 }
 
 func estimateAttackTimes(guesses float64) (t EstimatedTimes) {
 	// crack_times_seconds
 	t.CrackTimesSeconds = make(map[string]float64)
-	t.CrackTimesSeconds["online_throttling_100_per_hour"] = guesses / (100 / 3600)
+	t.CrackTimesSeconds["online_throttling_100_per_hour"] = guesses * 3600.0 / 100.0
 	t.CrackTimesSeconds["online_no_throttling_10_per_second"] = guesses / 10
 	t.CrackTimesSeconds["offline_slow_hashing_1e4_per_second"] = guesses / 1e4
 	t.CrackTimesSeconds["offline_fast_hashing_1e10_per_second"] = guesses / 1e10
 
-	t.CrashTimesDisplay = make(map[string]string)
+	t.CrackTimesDisplay = make(map[string]string)
 
 	for scenario, seconds := range t.CrackTimesSeconds {
-		t.CrashTimesDisplay[scenario] = displayTime(seconds)
+		t.CrackTimesDisplay[scenario] = displayTime(seconds)
 	}
 
 	t.Score = guessesToScore(guesses)
@@ -60,22 +60,22 @@ func displayTime(seconds float64) string {
 	year := month * 12
 	century := year * 100
 
-	if seconds < 1 {
+	switch {
+	case seconds < 1:
 		return "less than a second"
-	}
-	if seconds < minute {
+	case seconds < minute:
 		return strCount(seconds, "second")
-	} else if seconds < hour {
+	case seconds < hour:
 		return strCount(seconds/minute, "minute")
-	} else if seconds < day {
+	case seconds < day:
 		return strCount(seconds/hour, "hour")
-	} else if seconds < month {
+	case seconds < month:
 		return strCount(seconds/day, "day")
-	} else if seconds < year {
+	case seconds < year:
 		return strCount(seconds/month, "month")
-	} else if seconds < century {
+	case seconds < century:
 		return strCount(seconds/year, "year")
-	} else {
+	default:
 		return "centuries"
 	}
 }

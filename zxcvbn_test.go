@@ -3,14 +3,13 @@ package zxcvbn
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/trustelem/zxcvbn/match"
-	"github.com/trustelem/zxcvbn/scoring"
-
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/scoring"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +25,7 @@ func TestPasswordStrength(t *testing.T) {
 		} `json:"tests"`
 	}
 
-	b, err := ioutil.ReadFile(filepath.Join("testdata", "output.json"))
+	b, err := os.ReadFile(filepath.Join("testdata", "output.json"))
 	require.NoError(t, err)
 
 	err = json.Unmarshal(b, &testdata)
@@ -89,7 +88,76 @@ func TestPasswordStrength(t *testing.T) {
 			assert.Equal(t, td.Score, s.Score, "Wrong score")
 		})
 	}
+}
 
+func TestPasswordStrengthReturnsEstimatedTimes(t *testing.T) {
+	s := PasswordStrength("password", nil)
+
+	require.NotNil(t, s.CrackTimesSeconds)
+	require.NotNil(t, s.CrackTimesDisplay)
+	assert.Equal(t, guessesToScore(s.Guesses), s.Score)
+	assert.InEpsilon(t, s.Guesses/10, s.CrackTimesSeconds["online_no_throttling_10_per_second"], 1e-15)
+	assert.Equal(t, displayTime(s.CrackTimesSeconds["online_no_throttling_10_per_second"]), s.CrackTimesDisplay["online_no_throttling_10_per_second"])
+
+	b, err := json.Marshal(s)
+	require.NoError(t, err)
+	var encoded map[string]any
+	require.NoError(t, json.Unmarshal(b, &encoded))
+	assert.Contains(t, encoded, "crack_times_seconds")
+	assert.Contains(t, encoded, "crack_times_display")
+	assert.Contains(t, encoded, "score")
+}
+
+func TestEstimatorUsesCustomDictionaries(t *testing.T) {
+	estimator := NewEstimator(Config{
+		CustomDictionaries: map[string][]string{
+			"custom": {"kwyjibo"},
+		},
+	})
+
+	result := estimator.PasswordStrength("kwyjib0", nil)
+
+	found := false
+	for _, m := range result.Sequence {
+		if m.Pattern == "dictionary" && m.Token == "kwyjib0" && m.MatchedWord == "kwyjibo" && m.DictionaryName == "custom" && m.L33t {
+			assert.Equal(t, map[string]string{"0": "o"}, m.Sub)
+			found = true
+		}
+	}
+	assert.True(t, found)
+}
+
+func TestPasswordStrengthUserInputs(t *testing.T) {
+	userInputs := []string{"kwyjibo"}
+
+	// a user input on its own is trivially guessable
+	result := PasswordStrength("kwyjibo", userInputs)
+	assert.Less(t, result.Guesses, 10.0)
+	assert.Equal(t, 0, result.Score)
+
+	// ...and so is one repeated, because the repeat matcher's base analysis
+	// sees the user inputs too
+	result = PasswordStrength("kwyjibokwyjibo", userInputs)
+	assert.Less(t, result.Guesses, 100.0)
+	assert.Equal(t, 0, result.Score)
+}
+
+func TestL33tMatchAfterMultibyteRune(t *testing.T) {
+	result := PasswordStrength("äp@ssword", nil)
+
+	found := false
+	for _, m := range result.Sequence {
+		if m.Pattern == "dictionary" && m.L33t && m.Token == "p@ssword" {
+			found = true
+		}
+	}
+	assert.True(t, found)
+
+	// the l33t match must keep the estimate close to the ASCII-prefix
+	// equivalent; before the byte-index fix it ballooned to ~4.6e7
+	ascii := PasswordStrength("xp@ssword", nil)
+	assert.Less(t, result.Guesses, 1e6)
+	assert.Less(t, result.Guesses, ascii.Guesses*100)
 }
 
 func TestCornerCases(t *testing.T) {

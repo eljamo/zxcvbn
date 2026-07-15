@@ -1,16 +1,16 @@
 package matching
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/trustelem/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_dictionaryMatch(t *testing.T) {
 	dm := dictionaryMatch{
 		rankedDictionaries: map[string]rankedDictionnary{
-			"d1": rankedDictionnary{
+			"d1": {
 				"motherboard": 1,
 				"mother":      2,
 				"board":       3,
@@ -20,7 +20,7 @@ func Test_dictionaryMatch(t *testing.T) {
 				"先生":          7,
 				"猫咪":          8,
 			},
-			"d2": rankedDictionnary{
+			"d2": {
 				"z":          1,
 				"8":          2,
 				"99":         3,
@@ -167,8 +167,8 @@ func Test_dictionaryMatch(t *testing.T) {
 				DictionaryName: "d2",
 				I:              pv.i,
 				J:              pv.j,
-			}}, dm.Matches(pv.password))
-
+			},
+		}, dm.Matches(pv.password))
 	}
 
 	// matches against all words in provided dictionaries
@@ -187,13 +187,14 @@ func Test_dictionaryMatch(t *testing.T) {
 					DictionaryName: name,
 					I:              0,
 					J:              len(word) - 1,
-				}}, dm.Matches(word))
+				},
+			}, dm.Matches(word))
 		}
 	}
 }
 
 func Test_defaultdictionary(t *testing.T) {
-	got := defaultRankedDictionnaries.Matches("wow")
+	got := defaultRankedDictionaries.Matches("wow")
 	assert.Equal(t, []*match.Match{
 		{
 			Pattern:        "dictionary",
@@ -203,9 +204,10 @@ func Test_defaultdictionary(t *testing.T) {
 			DictionaryName: "us_tv_and_film",
 			I:              0,
 			J:              2,
-		}}, got)
+		},
+	}, got)
 
-	d := defaultRankedDictionnaries.withDict(
+	d := defaultRankedDictionaries.withDict(
 		"user_inputs",
 		buildRankedDict([]string{"foo", "bar"}),
 	)

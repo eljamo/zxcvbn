@@ -2,14 +2,15 @@ package scoring_test
 
 import (
 	"math"
+	"strconv"
 	"testing"
 
+	"github.com/eljamo/zxcvbn/adjacency"
+	"github.com/eljamo/zxcvbn/internal/mathutils"
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/matching"
+	"github.com/eljamo/zxcvbn/scoring"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn/adjacency"
-	"github.com/trustelem/zxcvbn/internal/mathutils"
-	"github.com/trustelem/zxcvbn/match"
-	"github.com/trustelem/zxcvbn/matching"
-	"github.com/trustelem/zxcvbn/scoring"
 )
 
 func TestRepeatGuesses(t *testing.T) {
@@ -53,6 +54,7 @@ func TestSequenceGuesses(t *testing.T) {
 		{"4567", true, 10 * 4},      // base10 * len-4
 		{"7654", false, 10 * 4 * 2}, // base10 * len 4 * descending
 		{"ZYX", false, 4 * 3 * 2},   // obvious start * len-3 * descending
+		{"стуфхц", true, 26 * 6},    // base26 * rune count 6, not byte count 12
 	}
 	for _, tt := range tests {
 		guesses := scoring.SequenceGuesses(&match.Match{
@@ -83,8 +85,9 @@ func TestRegexGuesses(t *testing.T) {
 		RegexName: "recent_year",
 	}))
 
-	assert.EqualValues(t, mathutils.Abs(scoring.MinYearSpace), scoring.RegexGuesses(&match.Match{
-		Token:     "2005",
+	recentYear := strconv.Itoa(scoring.ReferenceYear - scoring.MinYearSpace + 1)
+	assert.EqualValues(t, scoring.MinYearSpace, scoring.RegexGuesses(&match.Match{
+		Token:     recentYear,
 		RegexName: "recent_year",
 	}))
 }
@@ -108,7 +111,6 @@ func TestDateGuesses(t *testing.T) {
 		Separator: "/",
 	}
 	assert.EqualValues(t, 365*scoring.MinYearSpace*4, scoring.DateGuesses(m))
-
 }
 
 func TestSpatialGuesses(t *testing.T) {
@@ -224,6 +226,11 @@ func TestUppercaseVariants(t *testing.T) {
 		{"ABCDEf", mathutils.NCk(6, 1)},
 		{"aBCDEf", mathutils.NCk(6, 1) + mathutils.NCk(6, 2)},
 		{"ABCdef", mathutils.NCk(6, 1) + mathutils.NCk(6, 2) + mathutils.NCk(6, 3)},
+		// digit-containing all-caps: these return 2 via the reAllUpper gate,
+		// they do not reach the variations < 1 clamp further down
+		{"PASSWORD1", 2},
+		{"P@55W0RD", 2},
+		{"ABC123", 2},
 	}
 	for _, tt := range tests {
 		// check guess multiplier of word

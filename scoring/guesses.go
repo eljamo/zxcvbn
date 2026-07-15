@@ -8,9 +8,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/trustelem/zxcvbn/adjacency"
-	"github.com/trustelem/zxcvbn/internal/mathutils"
-	"github.com/trustelem/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/adjacency"
+	"github.com/eljamo/zxcvbn/internal/mathutils"
+	"github.com/eljamo/zxcvbn/match"
 )
 
 const (
@@ -91,10 +91,12 @@ func DictionaryGuesses(m *match.Match) float64 {
 	return float64(m.BaseGuesses) * float64(m.UppercaseVariations) * float64(m.L33tVariations) * float64(reversedVariations)
 }
 
-var reStartUpper = regexp.MustCompile(`^[A-Z][^A-Z]+$`)
-var reEndUpper = regexp.MustCompile(`^[^A-Z]+[A-Z]$`)
-var reAllUpper = regexp.MustCompile(`^[^a-z]+$`)
-var reAllLower = regexp.MustCompile(`^[^A-Z]+$`)
+var (
+	reStartUpper = regexp.MustCompile(`^[A-Z][^A-Z]+$`)
+	reEndUpper   = regexp.MustCompile(`^[^A-Z]+[A-Z]$`)
+	reAllUpper   = regexp.MustCompile(`^[^a-z]+$`)
+	reAllLower   = regexp.MustCompile(`^[^A-Z]+$`)
+)
 
 func UppercaseVariations(w string) float64 {
 	if reAllLower.MatchString(w) || strings.ToLower(w) == w {
@@ -125,6 +127,14 @@ func UppercaseVariations(w string) float64 {
 	variations := float64(0)
 	for i := 1; i <= u && i <= l; i++ {
 		variations += mathutils.NCk(u+l, i)
+	}
+	// defensive clamp, deliberately unreachable today: any word reaching this
+	// loop has at least one ASCII uppercase (failed reAllLower) and one ASCII
+	// lowercase (failed reAllUpper) letter, so the i=1 term is >= 2. kept so no
+	// future change to the regex gates above can silently collapse the guess
+	// estimate to 0.
+	if variations < 1 {
+		return 1
 	}
 	return variations
 }
@@ -211,7 +221,7 @@ func RepeatGuesses(m *match.Match) float64 {
 }
 
 func SequenceGuesses(m *match.Match) float64 {
-	firstChr := m.Token[0]
+	firstChr := []rune(m.Token)[0]
 	// lower guesses for obvious starting points
 	baseGuesses := 0
 	switch firstChr {
@@ -231,7 +241,7 @@ func SequenceGuesses(m *match.Match) float64 {
 		// 2x guesses
 		baseGuesses *= 2
 	}
-	return float64(baseGuesses * len(m.Token))
+	return float64(baseGuesses * utf8.RuneCountInString(m.Token))
 }
 
 func RegexGuesses(m *match.Match) float64 {

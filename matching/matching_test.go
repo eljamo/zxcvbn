@@ -1,5 +1,7 @@
 package matching
 
+import "slices"
+
 type patternVariant struct {
 	password string
 	i        int
@@ -8,12 +10,7 @@ type patternVariant struct {
 
 func genpws(pattern string, prefixes []string, suffixes []string) []patternVariant {
 	arrayContains := func(array []string, val string) bool {
-		for _, s := range array {
-			if s == val {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(array, val)
 	}
 	if !arrayContains(prefixes, "") {
 		prefixes = append([]string{""}, prefixes...)

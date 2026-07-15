@@ -4,13 +4,15 @@ import (
 	"strconv"
 
 	"github.com/dlclark/regexp2"
-	"github.com/trustelem/zxcvbn/internal/mathutils"
-	"github.com/trustelem/zxcvbn/match"
-	"github.com/trustelem/zxcvbn/scoring"
+	"github.com/eljamo/zxcvbn/internal/mathutils"
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/scoring"
 )
 
-const dateMaxYear = 2050
-const dateMinYear = 1000
+const (
+	dateMaxYear = 2050
+	dateMinYear = 1000
+)
 
 var dateSplits = map[int][]struct{ k, l int }{
 	4: { // for length-4 strings, eg 1191 or 9111, two ways to split:
@@ -40,6 +42,7 @@ var dateSplits = map[int][]struct{ k, l int }{
 
 var maybeDateNoSeparator = regexp2.MustCompile(
 	`^\d{4,8}$`, 0)
+
 var maybeDateWithSeparator = regexp2.MustCompile(
 	`^(\d{1,4})([\s/\\_.-])(\d{1,2})\2(\d{1,4})$`, 0)
 
@@ -84,6 +87,15 @@ func (dm dateMatch) Matches(password string) []*match.Match {
 				continue
 			}
 			var candidates []*dateMatchCandidate
+
+			// Check if it's a valid year (YYYY)
+			yyyy, _ := strconv.Atoi(token)
+			if yyyy >= dateMinYear && yyyy <= dateMaxYear {
+				candidates = append(candidates, &dateMatchCandidate{
+					Year: yyyy,
+				})
+			}
+
 			for _, s := range dateSplits[len(token)] {
 				s1, s2, s3 := token[0:s.k], token[s.k:s.l], token[s.l:]
 				if dmy := mapIntsToDMY(s1, s2, s3); dmy != nil {
@@ -268,12 +280,13 @@ func mapIntsToDM(i1, i2 int, year int) *dateMatchCandidate {
 }
 
 func twoToFourDigitYear(year int) int {
-	if year > 99 {
+	switch {
+	case year > 99:
 		return year
-	} else if year > 50 {
+	case year > 50:
 		// 87 -> 1987
 		return year + 1900
-	} else {
+	default:
 		// 15 -> 2015
 		return year + 2000
 	}

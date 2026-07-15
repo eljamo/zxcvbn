@@ -2,8 +2,9 @@ package matching
 
 import (
 	"regexp"
+	"unicode/utf8"
 
-	"github.com/trustelem/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/match"
 )
 
 type sequenceMatch struct{}
@@ -17,38 +18,53 @@ func abs(a int) int {
 	return a
 }
 
-var reLower = regexp.MustCompile(`^[a-z]+$`)
-var reUpper = regexp.MustCompile(`^[A-Z]+$`)
-var reDigits = regexp.MustCompile(`^\d+$`)
+var (
+	reLower  = regexp.MustCompile(`^[a-z]+$`)
+	reUpper  = regexp.MustCompile(`^[A-Z]+$`)
+	reDigits = regexp.MustCompile(`^\d+$`)
+)
 
 func (sequenceMatch) Matches(password string) []*match.Match {
 	matches := []*match.Match{}
-	if len(password) == 1 {
+	runes := []rune(password)
+	if len(runes) <= 1 {
 		return matches
 	}
 
+	// byteStart[k] is the byte offset of the k-th rune;
+	// byteStart[len(runes)] == len(password).
+	byteStart := make([]int, len(runes)+1)
+	b := 0
+	for k, r := range runes {
+		byteStart[k] = b
+		b += utf8.RuneLen(r)
+	}
+	byteStart[len(runes)] = b
+
+	// i, j, delta are rune indices/deltas; Token, I, J are emitted in bytes.
 	update := func(i, j, delta int) {
 		absDelta := abs(delta)
 		if j-i > 1 || absDelta == 1 {
 			if absDelta > 0 && absDelta <= maxDelta {
-				token := password[i : j+1]
+				token := password[byteStart[i]:byteStart[j+1]]
 				// conservatively stick with roman alphabet size.
 				// (this could be improved)
 				seqName := "unicode"
 				seqSpace := 26
-				if reLower.MatchString(token) {
+				switch {
+				case reLower.MatchString(token):
 					seqName = "lower"
-				} else if reUpper.MatchString(token) {
+				case reUpper.MatchString(token):
 					seqName = "upper"
-				} else if reDigits.MatchString(token) {
+				case reDigits.MatchString(token):
 					seqName = "digits"
 					seqSpace = 10
 				}
 				matches = append(matches, &match.Match{
 					Pattern:       "sequence",
-					I:             i,
-					J:             j,
-					Token:         password[i : j+1],
+					I:             byteStart[i],
+					J:             byteStart[j+1] - 1,
+					Token:         token,
 					SequenceName:  seqName,
 					SequenceSpace: seqSpace,
 					Ascending:     delta > 0,
@@ -59,8 +75,8 @@ func (sequenceMatch) Matches(password string) []*match.Match {
 
 	i := 0
 	lastDelta := 0 // null
-	for k := 1; k <= len(password)-1; k++ {
-		delta := int(password[k]) - int(password[k-1])
+	for k := 1; k <= len(runes)-1; k++ {
+		delta := int(runes[k]) - int(runes[k-1])
 		if k == 1 {
 			lastDelta = delta
 		}
@@ -73,6 +89,6 @@ func (sequenceMatch) Matches(password string) []*match.Match {
 		lastDelta = delta
 	}
 
-	update(i, len(password)-1, lastDelta)
+	update(i, len(runes)-1, lastDelta)
 	return matches
 }

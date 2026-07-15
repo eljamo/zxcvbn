@@ -3,8 +3,8 @@ package matching
 import (
 	"strings"
 
-	"github.com/trustelem/zxcvbn/adjacency"
-	"github.com/trustelem/zxcvbn/match"
+	"github.com/eljamo/zxcvbn/adjacency"
+	"github.com/eljamo/zxcvbn/match"
 )
 
 type spatialMatch struct {
@@ -50,7 +50,7 @@ func spatialMatchHelper(password string, graph *adjacency.Graph) (matches []*mat
 		for {
 			prevChar := password[j-1]
 			found := false
-			foundDirection := -1
+			var foundDirection int
 			curDirection := -1
 			adjacents := graph.Graph[string(prevChar)]
 			// Consider growing pattern by one character if j hasn't gone over the edge
@@ -98,7 +98,7 @@ func spatialMatchHelper(password string, graph *adjacency.Graph) (matches []*mat
 					}
 					matches = append(matches, matchSpc)
 				}
-				//. . . and then start a new search from the rest of the password
+				// . . . and then start a new search from the rest of the password
 				i = j
 				break
 			}

@@ -1,13 +1,11 @@
 package matching
 
 import (
-	"github.com/google/go-cmp/cmp"
-	"reflect"
-	"strconv"
 	"testing"
 
+	"github.com/eljamo/zxcvbn/match"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustelem/zxcvbn/match"
 )
 
 var testl33tTable = map[string][]string{
@@ -15,92 +13,20 @@ var testl33tTable = map[string][]string{
 	"c": {"(", "{", "[", "<"},
 	"g": {"6", "9"},
 	"o": {"0"},
-}
-
-func Test_relevantSubtable(t *testing.T) {
-	// reduces l33t table to only the substitutions that a password might be employing
-	tests := []struct {
-		password string
-		want     map[string][]string
-	}{
-		{
-			password: "",
-			want:     map[string][]string{},
-		},
-		{
-			password: "abcdefgo123578!#$&*)]}>",
-			want:     map[string][]string{},
-		},
-		{
-			password: "a",
-			want:     map[string][]string{},
-		},
-		{
-			password: "4",
-			want:     map[string][]string{"a": {"4"}},
-		},
-		{
-			password: "4@",
-			want:     map[string][]string{"a": {"4", "@"}},
-		},
-		{
-			password: "4({60",
-			want:     map[string][]string{"a": {"4"}, "c": {"(", "{"}, "g": {"6"}, "o": {"0"}},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.password, func(t *testing.T) {
-			if got := relevantSubtable(tt.password, testl33tTable); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("relevantSubtable() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_enumerateLeetSubs(t *testing.T) {
-	// enumerates the different sets of l33t substitutions a password might be using
-	type args struct {
-		table map[string][]string
-	}
-	tests := []struct {
-		table map[string][]string
-		want  []map[string]string
-	}{
-		{
-			table: map[string][]string{},
-			want:  []map[string]string{{}},
-		},
-		{
-			table: map[string][]string{"a": {"@"}},
-			want:  []map[string]string{{"@": "a"}},
-		},
-		{
-			table: map[string][]string{"a": {"@", "4"}},
-			want:  []map[string]string{{"@": "a"}, {"4": "a"}},
-		},
-		{
-			table: map[string][]string{"a": {"@", "4"}, "c": {"("}},
-			want:  []map[string]string{{"@": "a", "(": "c"}, {"4": "a", "(": "c"}},
-		},
-	}
-	for i, tt := range tests {
-		t.Run("test_"+strconv.Itoa(i), func(t *testing.T) {
-			assert.Equal(t, tt.want, enumerateLeetSubs(tt.table))
-		})
-	}
+	"s": {"5", "$"},
 }
 
 func Test_l33tMatch(t *testing.T) {
 	lm := l33tMatch{
 		dm: dictionaryMatch{
 			rankedDictionaries: map[string]rankedDictionnary{
-				"words": rankedDictionnary{
+				"words": {
 					"aac":       1,
 					"password":  3,
 					"paassword": 4,
 					"asdf0":     5,
 				},
-				"words2": rankedDictionnary{
+				"words2": {
 					"cgo": 1,
 				},
 			},
@@ -213,40 +139,96 @@ func Test_l33tMatch(t *testing.T) {
 			},
 		},
 		{
-			name:     "doesn't match when multiple l33t substitutions are needed for the same letter",
-			password: "p4@ssword",
-			want:     []*match.Match{},
+			name:     "reports byte offsets when a multibyte rune precedes the token",
+			password: "äp4ssword",
+			want: []*match.Match{
+				{
+					Pattern:        "dictionary",
+					Token:          "p4ssword",
+					MatchedWord:    "password",
+					Rank:           3,
+					DictionaryName: "words",
+					I:              2,
+					J:              9,
+					L33t:           true,
+					Sub:            map[string]string{"4": "a"},
+				},
+			},
+		},
+		{
+			name:     "reports byte offsets with multibyte runes on both sides of the token",
+			password: "üp4sswordé",
+			want: []*match.Match{
+				{
+					Pattern:        "dictionary",
+					Token:          "p4ssword",
+					MatchedWord:    "password",
+					Rank:           3,
+					DictionaryName: "words",
+					I:              2,
+					J:              9,
+					L33t:           true,
+					Sub:            map[string]string{"4": "a"},
+				},
+			},
+		},
+		{
+			name:     "matches when multiple l33t substitutions are needed for the same letter",
+			password: "p@5$word",
+			want: []*match.Match{
+				{
+					Pattern:        "dictionary",
+					Token:          "p@5$word",
+					MatchedWord:    "password",
+					Rank:           3,
+					DictionaryName: "words",
+					I:              0,
+					J:              7,
+					L33t:           true,
+					Sub:            map[string]string{"@": "a", "5": "s", "$": "s"},
+				},
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, lm.Matches(tt.password))
+			got := lm.Matches(tt.password)
+			assert.Equal(t, tt.want, got)
+			for _, m := range got {
+				assert.Equal(t, tt.password[m.I:m.J+1], m.Token)
+			}
 		})
 	}
 
 	// doesn't match single-character l33ted words
 	assert.Len(t, lm.Matches("4 1 @"), 0)
 
-	// known issue: subsets of substitutions aren't tried.
-	// for long inputs, trying every subset of every possible substitution could quickly get large,
-	// but there might be a performant way to fix.
-	// (so in this example: {'4': a, '0': 'o'} is detected as a possible sub,
-	// but the subset {'4': 'a'} isn't tried, missing the match for asdf0.)
-	// TODO: consider partially fixing by trying all subsets of size 1 and maybe 2
-	assert.Len(t, lm.Matches("4sdf0"), 0)
+	assert.Equal(t, []*match.Match{
+		{
+			Pattern:        "dictionary",
+			Token:          "4sdf0",
+			MatchedWord:    "asdf0",
+			Rank:           5,
+			DictionaryName: "words",
+			I:              0,
+			J:              4,
+			L33t:           true,
+			Sub:            map[string]string{"4": "a"},
+		},
+	}, lm.Matches("4sdf0"))
 }
 
-func TestDeterministicOutput(t *testing.T) {
+func TestLeetTrieDeterministicOutput(t *testing.T) {
 	password := "coRrecth0rseba++ery9.23.2007staple$"
 
-	lm := l33tMatch{
-		dm:    defaultRankedDictionnaries,
-		table: l33tTable,
-	}
+	// build via newl33tMatch so the trie is constructed once: trie building is
+	// deterministic by design (sorted iteration); the nondeterminism risk this
+	// test guards against lives in match generation and state dedup.
+	lm := newl33tMatch(defaultRankedDictionaries, l33tTable)
 
 	var lastMatches []*match.Match
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		matches := lm.Matches(password)
 		if i > 0 {
 			if d := cmp.Diff(matches, lastMatches); d != "" {
