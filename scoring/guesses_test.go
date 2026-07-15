@@ -54,6 +54,7 @@ func TestSequenceGuesses(t *testing.T) {
 		{"4567", true, 10 * 4},      // base10 * len-4
 		{"7654", false, 10 * 4 * 2}, // base10 * len 4 * descending
 		{"ZYX", false, 4 * 3 * 2},   // obvious start * len-3 * descending
+		{"стуфхц", true, 26 * 6},    // base26 * rune count 6, not byte count 12
 	}
 	for _, tt := range tests {
 		guesses := scoring.SequenceGuesses(&match.Match{
@@ -225,6 +226,11 @@ func TestUppercaseVariants(t *testing.T) {
 		{"ABCDEf", mathutils.NCk(6, 1)},
 		{"aBCDEf", mathutils.NCk(6, 1) + mathutils.NCk(6, 2)},
 		{"ABCdef", mathutils.NCk(6, 1) + mathutils.NCk(6, 2) + mathutils.NCk(6, 3)},
+		// digit-containing all-caps: these return 2 via the reAllUpper gate,
+		// they do not reach the variations < 1 clamp further down
+		{"PASSWORD1", 2},
+		{"P@55W0RD", 2},
+		{"ABC123", 2},
 	}
 	for _, tt := range tests {
 		// check guess multiplier of word

@@ -97,6 +97,9 @@ func MostGuessableMatchSequence(password string, matches []*match.Match, exclude
 		optimal.g[i] = make(map[int]float64)
 	}
 
+	// reused buffer for sequenceLengths at both call sites below
+	var lbuf []int
+
 	// helper: considers whether a length-l sequence ending at match m is better (fewer guesses)
 	// than previously encountered sequences, updating state if so.
 	update := func(m *match.Match, l int) {
@@ -145,11 +148,9 @@ func MostGuessableMatchSequence(password string, matches []*match.Match, exclude
 			// see if adding these new matches to any of the sequences in optimal[i-1]
 			// leads to new bests.
 			m := makeBruteforceMatch(i, k, password)
-			for l := range n {
-				lastM, ok := optimal.m[prev][l]
-				if !ok {
-					continue
-				}
+			lbuf = sequenceLengths(lbuf, optimal.m[prev])
+			for _, l := range lbuf {
+				lastM := optimal.m[prev][l]
 				// corner: an optimal sequence will never have two adjacent bruteforce matches.
 				// it is strictly better to have a single bruteforce match spanning the same region:
 				// same contribution to the guess product with a lower length.
@@ -201,10 +202,9 @@ func MostGuessableMatchSequence(password string, matches []*match.Match, exclude
 	for k := range n {
 		for _, m := range matchesByJ[k] {
 			if m.I > 0 {
-				for l := range n {
-					if optimal.m[m.I-1][l] != nil {
-						update(m, l+1)
-					}
+				lbuf = sequenceLengths(lbuf, optimal.m[m.I-1])
+				for _, l := range lbuf {
+					update(m, l+1)
 				}
 			} else {
 				update(m, 1)
@@ -229,6 +229,19 @@ func MostGuessableMatchSequence(password string, matches []*match.Match, exclude
 	result.Guesses = guesses
 	result.Sequence = optimalMatchSequence
 	return result
+}
+
+// sequenceLengths returns the ascending sequence lengths present in byL,
+// reusing dst's storage. Iterating 0..n with a lookup per l is O(n) per call
+// and made the whole search cubic; the maps rarely hold more than l_max (~5)
+// keys. Sorted so update order (and therefore output) stays deterministic.
+func sequenceLengths(dst []int, byL map[int]*match.Match) []int {
+	dst = dst[:0]
+	for l := range byL {
+		dst = append(dst, l)
+	}
+	sort.Ints(dst)
+	return dst
 }
 
 // helper: make bruteforce match objects spanning i to j, inclusive.

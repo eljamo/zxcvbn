@@ -127,6 +127,39 @@ func TestEstimatorUsesCustomDictionaries(t *testing.T) {
 	assert.True(t, found)
 }
 
+func TestPasswordStrengthUserInputs(t *testing.T) {
+	userInputs := []string{"kwyjibo"}
+
+	// a user input on its own is trivially guessable
+	result := PasswordStrength("kwyjibo", userInputs)
+	assert.Less(t, result.Guesses, 10.0)
+	assert.Equal(t, 0, result.Score)
+
+	// ...and so is one repeated, because the repeat matcher's base analysis
+	// sees the user inputs too
+	result = PasswordStrength("kwyjibokwyjibo", userInputs)
+	assert.Less(t, result.Guesses, 100.0)
+	assert.Equal(t, 0, result.Score)
+}
+
+func TestL33tMatchAfterMultibyteRune(t *testing.T) {
+	result := PasswordStrength("äp@ssword", nil)
+
+	found := false
+	for _, m := range result.Sequence {
+		if m.Pattern == "dictionary" && m.L33t && m.Token == "p@ssword" {
+			found = true
+		}
+	}
+	assert.True(t, found)
+
+	// the l33t match must keep the estimate close to the ASCII-prefix
+	// equivalent; before the byte-index fix it ballooned to ~4.6e7
+	ascii := PasswordStrength("xp@ssword", nil)
+	assert.Less(t, result.Guesses, 1e6)
+	assert.Less(t, result.Guesses, ascii.Guesses*100)
+}
+
 func TestCornerCases(t *testing.T) {
 	testdata := []string{
 		"",

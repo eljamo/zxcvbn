@@ -92,5 +92,7 @@ Online throttled crack time: 20 minutes
 Online unthrottled crack time: 3 seconds
 Offline fast hash crack time: less than a second
 Offline slow hash crack time: less than a second
+Feedback Warning: This is similar to a commonly used password.
+Feedback Suggestions: [Predictable substitutions like '@' instead of 'a' don't help very much. Add another word or two. Uncommon words are better.]
 Calculation time: 0.000s
 ```

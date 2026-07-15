@@ -128,6 +128,14 @@ func UppercaseVariations(w string) float64 {
 	for i := 1; i <= u && i <= l; i++ {
 		variations += mathutils.NCk(u+l, i)
 	}
+	// defensive clamp, deliberately unreachable today: any word reaching this
+	// loop has at least one ASCII uppercase (failed reAllLower) and one ASCII
+	// lowercase (failed reAllUpper) letter, so the i=1 term is >= 2. kept so no
+	// future change to the regex gates above can silently collapse the guess
+	// estimate to 0.
+	if variations < 1 {
+		return 1
+	}
 	return variations
 }
 
@@ -213,7 +221,7 @@ func RepeatGuesses(m *match.Match) float64 {
 }
 
 func SequenceGuesses(m *match.Match) float64 {
-	firstChr := m.Token[0]
+	firstChr := []rune(m.Token)[0]
 	// lower guesses for obvious starting points
 	baseGuesses := 0
 	switch firstChr {
@@ -233,7 +241,7 @@ func SequenceGuesses(m *match.Match) float64 {
 		// 2x guesses
 		baseGuesses *= 2
 	}
-	return float64(baseGuesses * len(m.Token))
+	return float64(baseGuesses * utf8.RuneCountInString(m.Token))
 }
 
 func RegexGuesses(m *match.Match) float64 {

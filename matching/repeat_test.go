@@ -6,6 +6,7 @@ import (
 
 	"github.com/eljamo/zxcvbn/match"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // removeRepeatBaseData removes extra data not needed for unit tests
@@ -171,6 +172,106 @@ func TestRepeatMatching(t *testing.T) {
 			RepeatCount: 4,
 		},
 	}, matches)
+}
+
+func TestRepeatMatchingMultibyte(t *testing.T) {
+	r := repeatMatch{}
+
+	// I and J are byte indices, so a repeat of multibyte runes ends at the last
+	// byte of the final rune, not its first.
+	testCases := []struct {
+		name     string
+		password string
+		expected []*match.Match
+	}{
+		{
+			name:     "single multibyte base",
+			password: "ééééé",
+			expected: []*match.Match{
+				{
+					Pattern:     "repeat",
+					Token:       "ééééé",
+					I:           0,
+					J:           9,
+					BaseToken:   "é",
+					RepeatCount: 5,
+				},
+			},
+		},
+		{
+			name:     "multi-rune multibyte base",
+			password: "ぱすわぱすわぱすわ",
+			expected: []*match.Match{
+				{
+					Pattern:     "repeat",
+					Token:       "ぱすわぱすわぱすわ",
+					I:           0,
+					J:           26,
+					BaseToken:   "ぱすわ",
+					RepeatCount: 3,
+				},
+			},
+		},
+		{
+			name:     "adjacent ascii and multibyte repeats",
+			password: "aaaéééééxxx",
+			expected: []*match.Match{
+				{
+					Pattern:     "repeat",
+					Token:       "aaa",
+					I:           0,
+					J:           2,
+					BaseToken:   "a",
+					RepeatCount: 3,
+				},
+				{
+					Pattern:     "repeat",
+					Token:       "ééééé",
+					I:           3,
+					J:           12,
+					BaseToken:   "é",
+					RepeatCount: 5,
+				},
+				{
+					Pattern:     "repeat",
+					Token:       "xxx",
+					I:           13,
+					J:           15,
+					BaseToken:   "x",
+					RepeatCount: 3,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			matches := removeRepeatBaseData(r.Matches(tc.password))
+			assert.Equal(t, tc.expected, matches)
+
+			for _, m := range matches {
+				assert.Equal(t, m.Token, tc.password[m.I:m.J+1])
+			}
+		})
+	}
+}
+
+func TestRepeatMatchingUserInputs(t *testing.T) {
+	matches := NewOmnimatcher(nil).Omnimatch("kwyjibokwyjibo", []string{"kwyjibo"})
+
+	var repeat *match.Match
+	for _, m := range matches {
+		if m.Pattern == "repeat" && m.Token == "kwyjibokwyjibo" {
+			repeat = m
+			break
+		}
+	}
+
+	require.NotNil(t, repeat, "expected a repeat match spanning the whole password")
+
+	// the base token is a rank-1 user input, so analysing it should cost
+	// 1!x1 + 1 = 2 guesses, not a bruteforce estimate
+	assert.LessOrEqual(t, repeat.BaseGuesses, 2.0)
 }
 
 func TestCornerCases(t *testing.T) {

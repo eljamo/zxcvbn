@@ -53,7 +53,7 @@ func (om Omnimatcher) Omnimatch(password string, userInputs []string) (matches [
 
 	matchers = append(matchers,
 		spatialMatch{graphs: defaultGraphs},
-		repeatMatch{omnimatch: om.Omnimatch},
+		repeatMatch{omnimatch: om.Omnimatch, userInputs: userInputs},
 		sequenceMatch{},
 		regexpMatch{regexes: defaultRegexpMatch},
 		dateMatch{},

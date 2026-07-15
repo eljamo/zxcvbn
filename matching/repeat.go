@@ -1,13 +1,16 @@
 package matching
 
 import (
+	"unicode/utf8"
+
 	"github.com/dlclark/regexp2"
 	"github.com/eljamo/zxcvbn/match"
 	"github.com/eljamo/zxcvbn/scoring"
 )
 
 type repeatMatch struct {
-	omnimatch func(password string, userInputs []string) []*match.Match
+	omnimatch  func(password string, userInputs []string) []*match.Match
+	userInputs []string
 }
 
 var (
@@ -64,16 +67,17 @@ func (rm repeatMatch) Matches(password string) []*match.Match {
 			rmatch = lazyMatch
 			baseToken = rmatch.GroupByNumber(1).String()
 		}
-		// FindStringMatchStartingAt takes an index into the string (basically an offset
-		// into a byte array). rmatch indices will be rune offsets and so need to be converted
-		// to string offsets
+		// FindStringMatchStartingAt takes a byte offset (which must be rune-aligned),
+		// but rmatch indices and lengths are rune offsets, so they need converting.
+		// j is the last byte of the final rune: take the byte index one rune past the
+		// end of the match, then step back a byte.
 		i := runeToStringIndex(rmatch.Index, password)
-		j := runeToStringIndex(rmatch.Index+rmatch.Captures[0].Length-1, password)
+		j := runeToStringIndex(rmatch.Index+rmatch.Captures[0].Length, password) - 1
 
 		// recursively match and score the base string
 		baseAnalysis := scoring.MostGuessableMatchSequence(
 			baseToken,
-			omnimatch(baseToken, nil),
+			omnimatch(baseToken, rm.userInputs),
 			false,
 		)
 		matches = append(matches, &match.Match{
@@ -84,7 +88,7 @@ func (rm repeatMatch) Matches(password string) []*match.Match {
 			BaseToken:   baseToken,
 			BaseGuesses: baseAnalysis.Guesses,
 			BaseMatches: baseAnalysis.Sequence,
-			RepeatCount: rmatch.Captures[0].Length / len(baseToken),
+			RepeatCount: rmatch.Captures[0].Length / utf8.RuneCountInString(baseToken),
 		})
 		lastIndex = j + 1
 

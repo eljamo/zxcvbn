@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/eljamo/zxcvbn/match"
 )
@@ -38,6 +39,16 @@ func (lm l33tMatch) Matches(password string) []*match.Match {
 		reversed = reverseL33tTable(lm.table)
 	}
 	runes := []rune(password)
+
+	// byteStart[k] is the byte offset of the k-th rune;
+	// byteStart[len(runes)] == len(password).
+	byteStart := make([]int, len(runes)+1)
+	b := 0
+	for k, r := range runes {
+		byteStart[k] = b
+		b += utf8.RuneLen(r)
+	}
+	byteStart[len(runes)] = b
 
 	for start := range runes {
 		states := []l33tState{{node: root}}
@@ -93,8 +104,8 @@ func (lm l33tMatch) Matches(password string) []*match.Match {
 						MatchedWord:    entry.word,
 						Rank:           entry.rank,
 						DictionaryName: entry.dictionaryName,
-						I:              start,
-						J:              end,
+						I:              byteStart[start],
+						J:              byteStart[end+1] - 1,
 						L33t:           true,
 						Sub:            stringSubstitution(state.sub),
 					})

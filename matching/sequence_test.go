@@ -2,6 +2,7 @@ package matching
 
 import (
 	"testing"
+	"unicode/utf8"
 
 	"github.com/eljamo/zxcvbn/match"
 	"github.com/stretchr/testify/assert"
@@ -60,6 +61,43 @@ func Test_sequenceMatch_Matches(t *testing.T) {
 				SequenceSpace: 26,
 			},
 		}, s.Matches(pv.password))
+	}
+
+	// doesn't match a single multibyte rune (the old byte-based length guard
+	// would have entered the loop)
+	assert.Empty(t, s.Matches("ä"))
+
+	// matches sequences of consecutive code points (U+0441..U+0446), with
+	// byte-offset I/J
+	assert.Equal(t, []*match.Match{
+		{
+			Pattern:       "sequence",
+			Token:         "стуфхц",
+			I:             0,
+			J:             11,
+			Ascending:     true,
+			SequenceName:  "unicode",
+			SequenceSpace: 26,
+		},
+	}, s.Matches("стуфхц"))
+
+	// multibyte runes don't split or shift ASCII sequence indices
+	mixed := "abcд"
+	mixedMatches := s.Matches(mixed)
+	assert.Equal(t, []*match.Match{
+		{
+			Pattern:       "sequence",
+			Token:         "abc",
+			I:             0,
+			J:             2,
+			Ascending:     true,
+			SequenceName:  "lower",
+			SequenceSpace: 26,
+		},
+	}, mixedMatches)
+	for _, m := range mixedMatches {
+		assert.Equal(t, mixed[m.I:m.J+1], m.Token)
+		assert.True(t, utf8.ValidString(m.Token))
 	}
 
 	// matches pattern with the right sequence type

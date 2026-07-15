@@ -32,3 +32,9 @@ go.work
 # Fuzz
 /fuzz/workdir
 /fuzz/*.zip
+
+# AI Tooling
+.claude/
+.kilo/
+.agents/
+plans/

@@ -139,6 +139,40 @@ func Test_l33tMatch(t *testing.T) {
 			},
 		},
 		{
+			name:     "reports byte offsets when a multibyte rune precedes the token",
+			password: "äp4ssword",
+			want: []*match.Match{
+				{
+					Pattern:        "dictionary",
+					Token:          "p4ssword",
+					MatchedWord:    "password",
+					Rank:           3,
+					DictionaryName: "words",
+					I:              2,
+					J:              9,
+					L33t:           true,
+					Sub:            map[string]string{"4": "a"},
+				},
+			},
+		},
+		{
+			name:     "reports byte offsets with multibyte runes on both sides of the token",
+			password: "üp4sswordé",
+			want: []*match.Match{
+				{
+					Pattern:        "dictionary",
+					Token:          "p4ssword",
+					MatchedWord:    "password",
+					Rank:           3,
+					DictionaryName: "words",
+					I:              2,
+					J:              9,
+					L33t:           true,
+					Sub:            map[string]string{"4": "a"},
+				},
+			},
+		},
+		{
 			name:     "matches when multiple l33t substitutions are needed for the same letter",
 			password: "p@5$word",
 			want: []*match.Match{
@@ -159,7 +193,11 @@ func Test_l33tMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, lm.Matches(tt.password))
+			got := lm.Matches(tt.password)
+			assert.Equal(t, tt.want, got)
+			for _, m := range got {
+				assert.Equal(t, tt.password[m.I:m.J+1], m.Token)
+			}
 		})
 	}
 
@@ -184,10 +222,10 @@ func Test_l33tMatch(t *testing.T) {
 func TestLeetTrieDeterministicOutput(t *testing.T) {
 	password := "coRrecth0rseba++ery9.23.2007staple$"
 
-	lm := l33tMatch{
-		dm:    defaultRankedDictionaries,
-		table: l33tTable,
-	}
+	// build via newl33tMatch so the trie is constructed once: trie building is
+	// deterministic by design (sorted iteration); the nondeterminism risk this
+	// test guards against lives in match generation and state dedup.
+	lm := newl33tMatch(defaultRankedDictionaries, l33tTable)
 
 	var lastMatches []*match.Match
 	for i := range 100 {
